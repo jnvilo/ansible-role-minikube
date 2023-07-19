@@ -1,0 +1,75 @@
+- name: Check if Minikube binary exists
+  stat:
+    path: /usr/local/bin/minikube
+  register: minikube_binary
+
+- name: Download Minikube binary
+  get_url:
+    url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+    dest: /tmp/minikube-linux-amd64
+  when: not minikube_binary.stat.exists
+
+- name: Set executable permissions for Minikube binary
+  file:
+    path: /tmp/minikube-linux-amd64
+    mode: '755'
+  when: not minikube_binary.stat.exists
+
+- name: Move Minikube binary to /usr/local/bin
+  command: mv /tmp/minikube-linux-amd64 /usr/local/bin/minikube
+  become: yes
+  when: not minikube_binary.stat.exists
+
+- name: Copy Minikube systemd service file
+  copy:
+    src: minikube.service
+    dest: /etc/systemd/system/minikube.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Minikube
+
+- name: Check if kubectl exists in /usr/local/bin
+  stat:
+    path: /usr/local/bin/kubectl
+  register: kubectl_file
+
+- name: Download kubectl binary
+  get_url:
+    url: https://dl.k8s.io/release/v1.27.3/bin/linux/amd64/kubectl
+    dest: /tmp/kubectl
+    mode: '0755'
+  when: not kubectl_file.stat.exists
+
+- name: Move kubectl binary to /usr/local/bin
+  command: mv /tmp/kubectl /usr/local/bin/kubectl
+  become: yes
+  when: not kubectl_file.stat.exists
+
+
+- name: Check if get_helm.sh exists in /usr/local/bin
+  stat:
+    path: /usr/local/bin/get_helm.sh
+  register: get_helm_file
+
+- name: Copy get_helm.sh to /usr/local/bin
+  copy:
+    src: files/get_helm.sh
+    dest: /usr/local/bin/get_helm.sh
+    owner: root
+    group: root
+    mode: '0755'
+  when: not get_helm_file.stat.exists
+
+- name: Check if helm exists in /usr/local/bin
+  stat:
+    path: /usr/local/bin/helm
+  register: helm_file
+
+- name: Run the script to install helm
+  command: /usr/local/bin/get_helm.sh 
+  args:
+    creates: /usr/local/bin/helm
+  when: not helm_file.stat.exists
+
+
