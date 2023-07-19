@@ -1,0 +1,7 @@
+- name: Restart Minikube
+  systemd:
+    name: minikube
+    state: restarted
+    daemon_reload: yes
+  become: yes
+
